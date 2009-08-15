@@ -151,7 +151,7 @@ static char ascii_pin_user [128] = "";
 static char ascii_pin_so [128] = "";
 
 /* Whether this tool should destroy all data on the HSM or not */
-static int nondestructive = 1;
+static int destructive = 0;
 
 
 /* =============================================================== */
@@ -265,7 +265,7 @@ void testslot_initiation (void) {
 	/*
 	 * Possibly setup the user PIN to use.
 	 */
-	if (nondestructive) {
+	if (destructive) {
 		TESTRV ("Logging into token for setting up PIN",
 			P11("C_Login") (seshdl, CKU_SO, (CK_UTF8CHAR_PTR) ascii_pin_so, strlen (ascii_pin_so)));
 		TESTRV ("Setting up user PIN",
@@ -483,7 +483,7 @@ void testslot_fragmentation (void) {
 	/*
 	 * Login to token as USER (possibly after setting up the PIN to use)
 	 */
-	if (nondestructive) {
+	if (destructive) {
 		TESTRV ("Logging into token for setting up PIN",
 			P11("C_Login") (seshdl, CKU_SO, (CK_UTF8CHAR_PTR) ascii_pin_so, strlen (ascii_pin_so)));
 		TESTRV ("Setting up user PIN",
@@ -618,7 +618,7 @@ void testslot_keysizing (void) {
 	/*
 	 * Login to token as USER (possibly after setting up the PIN to use)
 	 */
-	if (nondestructive) {
+	if (destructive) {
 		TESTRV ("Logging into token for setting up PIN",
 			P11("C_Login") (seshdl, CKU_SO, (CK_UTF8CHAR_PTR) ascii_pin_so, strlen (ascii_pin_so)));
 		TESTRV ("Setting up user PIN",
@@ -731,7 +731,7 @@ void testslot_signing (void) {
 	/*
 	 * Login to token as USER (possibly after setting up the PIN to use)
 	 */
-	if (nondestructive) {
+	if (destructive) {
 		TESTRV ("Logging into token for setting up PIN",
 			P11("C_Login") (seshdl, CKU_SO, (CK_UTF8CHAR_PTR) ascii_pin_so, strlen (ascii_pin_so)));
 		TESTRV ("Setting up user PIN",
@@ -842,7 +842,7 @@ void bailout (void) {
 /* Initialise the token.
  */
 void inittoken (void) {
-	if (nondestructive) {
+	if (destructive) {
 		TESTRV ("Formatting the token",
 			 P11("C_InitToken") (slotid, (CK_UTF8CHAR_PTR) ascii_pin_so, strlen (ascii_pin_so), (CK_UTF8CHAR_PTR) TOKENLABEL_32CHARS));
 	} else {
@@ -852,14 +852,16 @@ void inittoken (void) {
 
 
 /* Commandline options */
-static const char *opts = "hp:s:l:x";	// t:
+static const char *opts = "hp:s:l:";	// excluding shorthand -X
 static const struct option longopts[] = {
 	{ "help", 0, NULL, 'h' },
 	{ "pin", 1, NULL, 'p' },
 	{ "so-pin", 1, NULL, 's' },
 	{ "pkcs11lib",1, NULL, 'l' },
-	{ "destructive", 0, NULL, 'x' },
+	{ "destructive", 0, NULL, 'X' },
 	// { "token", 1, NULL, 't' },
+	//? { "interactive", 1, NULL, 'i' },
+	//? { "xmlfile", 1, NULL, 'i' },
 	{ NULL, 0, NULL, 0 }
 };
 
@@ -935,12 +937,12 @@ int main (int argc, char *argv []) {
 			break;
 		// case 't':
 		// Token?
-		case 'x':	// --destructive
-			if (!nondestructive) {
+		case 'X':	// --destructive
+			if (destructive) {
 				fprintf (stderr, "You should not specify your destructive wishes more than once\n");
 				exit (1);
 			}
-			nondestructive = 0;
+			destructive = 1;
 			break;
 		case -1:		// Done -- but are we, really?
 			if ((*ascii_pin_user) && (*ascii_pin_so) && p11) {
