@@ -1,4 +1,10 @@
-- Only the used CKM_xxx are employed in this test.
+- Only the used CKM_xxx should be employed in this test.
 - There is no testing of C_SignUpdate or C_VerifyUpdate
 + We de not test concurrent PKCS #11 access because we cannot exhaust that
-- Incorporate commandline-processing from cunit-stephen
++ Incorporate commandline options --pin --so-pin --pkcs11lib for normal testing
++ Incorporate commandline option --destructive to destroy previous HSM content
++ Incorporate commandline option --fast-and-frivolous for quick 'n' dirty tests
+X Incorporate commandline option --max-keypairs for unlimited/large key memory
++ Incorporate commandline options --skip-testname
+- Incorporate commandline option --token or so for token identification
+- Incorporate commandline options from cunit-stephen

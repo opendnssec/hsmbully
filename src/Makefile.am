@@ -11,4 +11,6 @@ bin_PROGRAMS = hsmbully
 
 hsmbully_LDADD = @CUNIT_LIBS@ -lm
 
+man_MANS = hsmbully.1
+
 EXTRA_DIST = $(srcdir)/cryptoki/*.h

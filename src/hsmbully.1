@@ -1,4 +1,4 @@
-.TH HSMBULLY 1 "$Revision:$"
+.TH HSMBULLY 1 "$Revision$"
 .SH NAME
 hsmbully \- Test a PKCS #11 token for OpenDNSSEC suitability
 .SH SYNOPSIS
@@ -7,10 +7,11 @@ hsmbully \- Test a PKCS #11 token for OpenDNSSEC suitability
 .SH DESCRIPTION
 .PP
 The hsmbully tool is designed to verify if a token, HSM or other PKCS #11
-implementation suffices to support OpenDNSSEC.  As it is intended to avoid
-setting up OpenDNSSEC fully on the token, it cannot give absolute certainty
-that a token will suffice, but in most cases it can give an early warning
-if the token will give problems when running fullblown OpenDNSSEC.
+implementation suffices to support OpenDNSSEC.  It is intended to allow a
+test before setting up full-blown OpenDNSSEC on the token, but as a
+result of that it cannot give 100% certainty that a token will suffice.
+In most cases however, it can give ample warning if the token would give
+problems when running fullblown OpenDNSSEC.
 .PP
 There are two modes of operation for hsmbully; one is destructive, meaning
 that all the contents on the token will be wiped, and the token will be
@@ -27,13 +28,28 @@ through the CUnit framework, and dumped into an XML file.  The intermediate
 objects created on the token for tests will be removed after successful
 termination of hsmbully.
 .PP
+The tests performed by hsmbully are deterministic.  That is, a second run with
+the same parameters and on the same initial token state should run in exactly
+the same way.  This is ensured by an internal "random" number generator that
+is reset with a given seed.
+.PP
 The current version of hsmbully assumes to find only a single slot with a
 token in it.  If not, it will bail out and complain that it does not know
 what token to bully.
 .SH OPTIONS
 .PP
 Several options to hsmbully are required options.  You must always specify
-\fB\-\-pin\fR, \fB\-\-so\-pin\fR and \fB\-\-pkcs11lib\R.
+\fB\-\-pin\fR, \fB\-\-so\-pin\fR and \fB\-\-pkcs11lib\fR.  It is likely
+that you will initially want to specify \fB\-\-fast\-and\-frivolous\fR and
+\fB\-\-verbose=4\fR as well.
+.TP
+\fB\-\-help\fR
+A quick and incomplete reference to the hsmbully commandline options.
+.TP
+\fB\-\-verbose\fR, \fB\-v\fR, \fB\-\-verbose=NUM\fR
+Increase or set the verbosity level.  Default level is 1, which reports only
+major steps of the program.  Level 0 is quiet, and higher levels may yield
+more detailed output.
 .TP
 \fB\-\-destructive\fR
 destroy all contents on the token.  This means that the \fB\-\-pin\fR and
@@ -41,46 +57,98 @@ destroy all contents on the token.  This means that the \fB\-\-pin\fR and
 values to use for login.  There is no single-character option alias for
 this long option.
 .TP
-\fB\-\-pin=PIN\fR, \fB-p PIN\fR
+\fB\-\-pin=PIN\fR, \fB\-p PIN\fR
 specifies the user PIN to be used by hsmbully.  If \fB\-\-destructive\fR
 is also specified, this PIN is set rather than just used to login.  In
 that case, the PIN will remain on the token even after all other objects
 are removed.
 .TP
-\fB\-\-so\-pin=PIN\fR, \fB-s PIN\fR
+\fB\-\-so\-pin=PIN\fR, \fB\-P PIN\fR
 specifies the security officer PIN, also known as the SO-PIN, to be used
 by hsmbully.  If \fB\-\-destructive\fR is also specified, this PIN is set
 rather than just used to login.  In that case, the PIN will remain on the
 token even after all other objects are removed.
 .TP
-\fB\-\-pkcs11lib=PIN\fR, \fB-l /path/to/lib.so\fR
+\fB\-\-pkcs11lib=PIN\fR, \fB\-l /path/to/lib.so\fR
 specifies the PKCS #11 library to use.  This must be a shared library that
 adheres to the PKCS #11 specifications from RSA Laboratories.  It will be
 addressed as a dynamic library.
+.TP
+\fB\-\-fast\-and\-frivolous\fR, \fB\-\-frivolous\fR, \fB\-f\fR
+The fullblown tests performed by hsmbully are quite extensive.  This may
+not be ideal during some preliminary work.  This option replaces the normal
+fullblown testing with far fewer loop-arounds.  Note that the outcome of
+hsmbully is generated faster, but it is less likely to find potential problems
+in the token under test.
+.TP
+\fB\-\-skip\-initiation\fR
+Skip the Initiation Test, as described under
+.SM
+.B "TESTS PERFORMED"
+below.  This may be useful if a token is known broken in this area, but
+still thought to be serious material for OpenDNSSEC.  Be very sure what
+you are doing though, you may be leaking keys before you know it.
+.TP
+\fB\-\-skip\-fragmentation\fR
+Skip the Fragmentation Test, as described under
+.SM
+.B "TESTS PERFORMED"
+below.  This may be useful for very large tokens, or soft tokens that have
+a virtually unconstrained memory space available.  Fragmentation testing
+may take unpractically long on such tokens, and may be skipped if sufficient
+trust in non-fragmentation may be assumed.
+.TP
+\fB\-\-skip\-keysizing\fR
+Skip the Key Sizing Test, as described under
+.SM
+.B "TESTS PERFORMED"
+below.  This may help to overcome problems with tokens that lie about the
+key sizes they can handle; for example, a token that can handle keys with
+1024 or 2048 bits, but nothing in between.  Be sure to manually configure
+OpenDNSSEC to key sizes usable for this token.
+.TP
+\fB\-\-skip\-signing\fR
+Skip the Signing Test, as described under
+.SM
+.B "TESTS PERFORMED"
+below.  This is not usually a shocking test to skip, as it tests a feature
+that is so common that it usually tested thoroughly by both token manufacturer
+and their (other) customers.
+.SM
+.B "TESTS PERFORMED"
+below.  If all four tests are skipped, hsmbully will not test anything. 
+.\" .TP
+.\" \fB\-\-max\-keypairs=NUM\fR, \fB\-\-max\-keys=NUM\fR, \fB\-m NUM\fR
+.\" For tokens with very large, or even unconstrained space for key storage, the
+.\" fragmentation test may have to be skipped.  This option indicates the maximum
+.\" number of key pairs to generate, and it will trigger an error if this maximum
+.\" is reached before running out of memory during this test.
 .\" TODO: --token
-.\" TODO: --quick
 .\" TODO: --interactive/CUnit
 .SH "TESTS PERFORMED"
 The following tests are performed as part of a run of hsmbully:
 .TP
 \fBInitiation test\fR
-This tests if the HSM properly handles all sorts of orders of opening and
+This tests if the token properly handles all sorts of orders of opening and
 closing access to the resources on the token.  The sequences tested
 deliberately include invalid accesses, such as not logging on and seeing
 if a previous sesssion's login is reused.  If the token sustains this test,
 it appears to be a proper implementation of those aspects of PKCS #11.
+.TP
 \fBFragmentation test\fR
 This tests if memory can sustain a long list of creations and deletions of
 keys, without ending up with fragmented memory.  This test starts by filling
 up all free space in the token with keys of various sizes, and then removes
 arbitrary ones and expects to be able to recreate a new one of the same size
 immediately after that.
+.TP
 \fBKey sizing test\fR
 This tests if the key sizes supported by the token are within reasonable
 constraints, if they match the algorithms used by OpenDNSSEC and if the
 claimed key size range is covered as PKCS #11 prescribes.  The test is done
 by creating key pairs and verifying the size of the modulus of the public
 key.
+.TP
 \fBSigning test\fR
 This tests if the signatures are made properly.  Signatures are constructed
 at a variety of key sizes within the supported range.

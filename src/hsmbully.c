@@ -41,16 +41,6 @@
 #endif
 
 
-#ifdef QUICK_N_DIRTY
-#  define THOUSANDS 10
-#  define HUNDRED   8
-#  define COUPLE    3
-#else
-#  define THOUSANDS 2500
-#  define HUNDRED   100
-#  define COUPLE    10
-#endif
-
 
 /* =============================================================== */
 
@@ -129,7 +119,7 @@ typedef CK_RV p11fn ();
 #define GETRV(x) { ck_rv = (x); }
 #define TESTRV(s,x) { ck_rv = (x); if (ck_rv!=CKR_OK) { fprintf (stderr, "%s: Error %08x in retval\n", s, ck_rv); } }
 // #define TESTRV(s,x) { static char cumsgbuf [1025]; if (ck_rv==CKR_OK) { ck_rv = (x); fprintf (stderr, "Return value %08lx at %s:%d\n", ck_rv, __FILE__, __LINE__); } if (ck_rv==CKR_OK) { printf ("Pass: %s\n", (s)); } else { snprintf (cumsgbuf, sizeof (cumsgbuf)-1, "Return value %08lx is not CKR_OK: %s", ck_rv, (s)); cumsgbuf [sizeof (cumsgbuf)-1] = '\0'; fprintf (stderr, "Fail: %s\n", cumsgbuf); } }
-#define MKFATAL() { if (ck_rv != CKR_OK) exit (1); }
+#define MKFATAL() { if (ck_rv != CKR_OK) { fprintf (stderr, "Fatal error in %s:%d\n", __FILE__, __LINE__); exit (1); } }
 #define LASTRVOK() (ck_rv==CKR_OK)
 
 
@@ -152,6 +142,23 @@ static char ascii_pin_so [128] = "";
 
 /* Whether this tool should destroy all data on the HSM or not */
 static int destructive = 0;
+
+/* Repeating counters, which can be overridden for quicker testing */
+static int thousands = 2500;
+static int hundred = 100;
+static int couple = 10;
+
+/* How many key pairs to generate maximally?  0 means infinite */
+static int max_keypairs = 0;
+
+/* What verbosity level has been requested?  Start is 1 */
+static int verbosity = 1;
+
+/* Should certain tests be skipped altogether? */
+static int skip_initiation = 0;
+static int skip_fragmentation = 0;
+static int skip_keysizing = 0;
+static int skip_signing = 0;
 
 
 /* =============================================================== */
@@ -225,6 +232,9 @@ CK_RV newkeypair (CK_SESSION_HANDLE seshdl,
 		{ CKA_UNWRAP, &false, sizeof (false) },
 		{ CKA_DERIVE, &false, sizeof (false) },
 	};
+	if (verbosity >= 3) {
+		printf ("   - Creating key pair with %d bit modulus\n", keybits);
+	}
 	return P11("C_GenerateKeyPair") (
 			seshdl,
 			&mech,
@@ -244,6 +254,11 @@ void testslot_initiation (void) {
 	CK_SESSION_HANDLE seshdl;
 	CK_BYTE noappinfo;
 	int initestctr;
+
+	/* Announce the start of this test */
+	if (verbosity >= 1) {
+		printf ("Entering initiation test\n");
+	}
 
 	/* Complain if user PIN and SO PIN are the same -- this will bring
 	 * out more subtlety in the tests to follow.
@@ -283,7 +298,7 @@ void testslot_initiation (void) {
 	/*
 	 * Iterate over the actual test, running (distorted) scripts.
 	 */
-	for (initestctr=0; initestctr < THOUSANDS; initestctr++) {
+	for (initestctr=0; initestctr < thousands; initestctr++) {
 		/*
   		 * Choices to be made at randomish:
   		 * choice_session==0           =>  fail to open session
@@ -294,6 +309,10 @@ void testslot_initiation (void) {
 		int choice_login   = randomish (10);
 		int choice_rw      = randomish (2);
 		int choice_user    = randomish (2);
+
+		if (verbosity >= 4) {
+			printf ("%8d\b\b\b\b\b\b\b\b", thousands-initestctr);
+		}
 
 		/*
 		 *  Open session with slot (with 10% chance of failure).
@@ -316,7 +335,11 @@ void testslot_initiation (void) {
 					(CK_UTF8CHAR_PTR) (choice_user? ascii_pin_user: ascii_pin_so),
 					choice_user? strlen (ascii_pin_user): strlen (ascii_pin_so)));
 			if (choice_session) {
-				MKFATAL ();
+				if (LASTRVOK ()) {
+					CU_PASS ("Properly granted login on an open session");
+				} else {
+					CU_FAIL ("Incorrectly failed to login on an open session");
+				}
 			} else {
 				if (LASTRVOK ()) {
 					CU_FAIL ("Incorrectly allowed login on a non-existing session");
@@ -447,6 +470,9 @@ void testslot_initiation (void) {
 	/*
 	 * End of initiation test, comprising of thousands of tests.
 	 */
+	if (verbosity >= 2) {
+		printf (" * Token state returned to normal\n");
+	}
 }
 
 
@@ -471,6 +497,11 @@ void testslot_fragmentation (void) {
 
 	int testctr;
 	CK_RV retval;
+
+	/* Announce the start of this test */
+	if (verbosity >= 1) {
+		printf ("Entering fragmentation test\n");
+	}
 
 	/*
 	 *  Open RW session with slot
@@ -499,6 +530,9 @@ void testslot_fragmentation (void) {
 	 * Fetch supported key sizes for this token.  Count in bytes, not
 	 * bits, to simplify later randomisation of key sizes.
 	 */
+	if (verbosity >= 2) {
+		printf (" * Determine key sizes\n");
+	}
 	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMinKeySize % 8, 0);
 	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMaxKeySize % 8, 0);
 	CU_ASSERT (mech_sha1_rsa_pkcs.ulMinKeySize <= mech_sha1_rsa_pkcs.ulMaxKeySize);
@@ -506,24 +540,28 @@ void testslot_fragmentation (void) {
 	CU_ASSERT (mech_sha1_rsa_pkcs.ulMaxKeySize >= 2048);
 	minbytes = mech_sha1_rsa_pkcs.ulMinKeySize / 8;
 	maxbytes = mech_sha1_rsa_pkcs.ulMaxKeySize / 8;
+	if (verbosity >= 3) {
+		printf ("   - Key sizes supported by this token range from %d to %d bits\n", minbytes * 8, maxbytes * 8);
+	}
 
 	/*
 	 * Fill the token with key pairs.  Loop until memory runs out, and
 	 * there's no more chances for filling up any further by lowering
 	 * the maximum key size.
 	 */
+	if (verbosity >= 2) {
+		printf (" * Filling the token with key pairs\n");
+	}
 	retval = CKR_OK;
 	while ( retval == CKR_OK ) {
 		CK_ULONG keybits;
 
-#ifdef QUICK_N_DIRTY
-#ifdef MAX_KEYS_GEN
-		if (keypairs == MAX_KEYS_GEN) {
-			CU_FAIL ("Hit preset MAX_KEYS_GEN upper limit before the device's memory was full");
-			break;
+		if (max_keypairs > 0) {
+			if (keypairs == max_keypairs) {
+				CU_FAIL ("Hit maximum number of key pairs to generate before the device's memory was full");
+				break;
+			}
 		}
-#endif
-#endif
 
 		keybits = 8 * randomish_minmax (minbytes, maxbytes);
 		keys = realloc (keys, sizeof (keys [0]) * (keypairs+1));
@@ -557,8 +595,17 @@ void testslot_fragmentation (void) {
 	 * If memory does not fragment, this should always succeed.
 	 * Repeat this test thousands of times (say, 2500x).
 	 */
-	for (testctr = 0; testctr < THOUSANDS; testctr++) {
+	if (verbosity >= 2) {
+		printf (" * Randomly replace key pairs with ones of the same size\n");
+	}
+	for (testctr = 0; testctr < thousands; testctr++) {
 		int victim = randomish (keypairs);
+		if (verbosity >= 3) {
+			printf ("   - Removing a %d bit key pair, expecting to free the memory for a new one\n", keys [victim].modbits);
+			if (verbosity >= 4) {
+				printf ("%8d\b\b\b\b\b\b\b\b", thousands-testctr);
+			}
+		}
 		TESTRV ("Removing a private key for fragmentation testing",
 			 P11("C_DestroyObject") (seshdl, keys [victim].priv));
 		TESTRV ("Removing a public key for fragmentation testing",
@@ -575,6 +622,9 @@ void testslot_fragmentation (void) {
 	/*
 	 * Cleanup: Destroy all key pairs, logout, close session.
 	 */
+	if (verbosity >= 2) {
+		printf (" * Cleanup the key pairs on the token\n");
+	}
 	for (kp=0; kp<keypairs; kp++) {
 		TESTRV ("Removing a private key after fragmentation test",
 			 P11("C_DestroyObject") (seshdl, keys [kp].priv));
@@ -607,10 +657,15 @@ void testslot_keysizing (void) {
 
 	CK_RV retval;
 
+	/* Announce the start of this test */
+	if (verbosity >= 1) {
+		printf ("Entering keysizing test\n");
+	}
+
 	/*
 	 *  Open RW session with slot
 	 */
-	TESTRV ("Opening session for fragmentation test",
+	TESTRV ("Opening session for keysizing test",
 		P11("C_OpenSession") (slotid, CKF_SERIAL_SESSION | CKF_RW_SESSION,
 				(void *) &noappinfo, NULL_PTR, &seshdl));
 	MKFATAL ();
@@ -634,6 +689,9 @@ void testslot_keysizing (void) {
 	 * Fetch supported key sizes for this token.  Count in bytes, not
 	 * bits, to simplify later randomisation of key sizes.
 	 */
+	if (verbosity >= 2) {
+		printf (" * Determine key sizes\n");
+	}
 	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMinKeySize % 8, 0);
 	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMaxKeySize % 8, 0);
 	CU_ASSERT (mech_sha1_rsa_pkcs.ulMinKeySize <= mech_sha1_rsa_pkcs.ulMaxKeySize);
@@ -641,10 +699,16 @@ void testslot_keysizing (void) {
 	CU_ASSERT (mech_sha1_rsa_pkcs.ulMaxKeySize >= 2048);
 	minbytes = mech_sha1_rsa_pkcs.ulMinKeySize / 8;
 	maxbytes = mech_sha1_rsa_pkcs.ulMaxKeySize / 8;
+	if (verbosity >= 3) {
+		printf ("   - Key sizes supported by this token range from %d to %d bits\n", minbytes * 8, maxbytes * 8);
+	}
 
 	/*
 	 * Iterate over key pair lengths, checking the modulus size of each.
 	 */
+	if (verbosity >= 2) {
+		printf (" * Check modulus size of each possible key pair length\n");
+	}
 	curbytes = minbytes;
 	while (curbytes <= maxbytes) {
 		int ok = 1;
@@ -654,6 +718,9 @@ void testslot_keysizing (void) {
 			{ CKA_MODULUS, NULL_PTR, 0 },
 		};
 		uint8_t *modulus;
+		if (verbosity >= 4) {
+			printf ("%8d\b\b\b\b\b\b\b\b", maxbytes-curbytes);
+		}
 		retval = newkeypair (seshdl, modbits, &pub, &priv);
 		TESTRV ("Creating key pair in modulus size test", retval);
 		ok = ok && (retval == CKR_OK);
@@ -698,11 +765,13 @@ void testslot_keysizing (void) {
 	/*
 	 * Cleanup.
 	 */
+	if (verbosity >= 2) {
+		printf (" * Cleaning up token state\n");
+	}
 	TESTRV ("Logging out after modulus size test",
 		 P11("C_Logout") (seshdl));
 	TESTRV ("Closing session after modulus size test",
 		 P11("C_CloseSession") (seshdl));
-
 }
 
 
@@ -719,6 +788,11 @@ void testslot_signing (void) {
 	int minbytes, maxbytes;
 
 	int keytestctr, sigtestctr;
+
+	/* Announce the start of this test */
+	if (verbosity >= 1) {
+		printf ("Entering signing test\n");
+	}
 
 	/*
 	 *  Open RW session with slot
@@ -747,6 +821,9 @@ void testslot_signing (void) {
 	 * Fetch supported key sizes for this token.  Count in bytes, not
 	 * bits, to simplify later randomisation of key sizes.
 	 */
+	if (verbosity >= 2) {
+		printf (" * Determine key sizes\n");
+	}
 	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMinKeySize % 8, 0);
 	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMaxKeySize % 8, 0);
 	CU_ASSERT (mech_sha1_rsa_pkcs.ulMinKeySize <= mech_sha1_rsa_pkcs.ulMaxKeySize);
@@ -754,12 +831,18 @@ void testslot_signing (void) {
 	CU_ASSERT (mech_sha1_rsa_pkcs.ulMaxKeySize >= 2048);
 	minbytes = mech_sha1_rsa_pkcs.ulMinKeySize / 8;
 	maxbytes = mech_sha1_rsa_pkcs.ulMaxKeySize / 8;
+	if (verbosity >= 3) {
+		printf ("   - Key sizes supported by this token range from %d to %d bits\n", minbytes * 8, maxbytes * 8);
+	}
 
 	/*
 	 * Iterate over keys a couple of times, creating a new key pair for
 	 * each iteration.
 	 */
-	for (keytestctr = 0; keytestctr < COUPLE; keytestctr++) {
+	for (keytestctr = 0; keytestctr < couple; keytestctr++) {
+		if (verbosity >= 2) {
+			printf (" * Key test iteration %d\n", keytestctr);
+		}
 
 		int modbits = 8 * randomish_minmax (minbytes, maxbytes);
 		CK_OBJECT_HANDLE pub, priv;
@@ -774,11 +857,14 @@ void testslot_signing (void) {
 		/* Iterate over signatures about a hundred times.  Create
 		 * a signature and verify it.
 		 */
-		for (sigtestctr = 0; sigtestctr < HUNDRED; sigtestctr++) {
+		for (sigtestctr = 0; sigtestctr < hundred; sigtestctr++) {
 			CK_BYTE data [] = "tralala-en-hopsasa";
 			CK_BYTE *sig = malloc (maxbytes);
 			CK_ULONG siglen;
 			CK_MECHANISM mech = { CKM_SHA1_RSA_PKCS, NULL_PTR, 0 };
+			if (verbosity >= 4) {
+				printf ("%3d / %8d\b\b\b\b\b\b\b\b\b\b\b\b\b\b", couple - keytestctr, hundred - sigtestctr);
+			}
 			if (sig == NULL) {
 				CU_FAIL ("Out of memory allocating for signature test");
 				break;
@@ -816,6 +902,9 @@ void testslot_signing (void) {
 	/*
 	 * Cleanup.
 	 */
+	if (verbosity >= 2) {
+		printf ("Cleaning up token state\n");
+	}
 	TESTRV ("Logging out after modulus size test",
 		 P11("C_Logout") (seshdl));
 	TESTRV ("Closing session after modulus size test",
@@ -843,6 +932,9 @@ void bailout (void) {
  */
 void inittoken (void) {
 	if (destructive) {
+		if (verbosity >= 1) {
+			printf ("Formatting the token and setting the PIN and SO-PIN as specified\n");
+		}
 		TESTRV ("Formatting the token",
 			 P11("C_InitToken") (slotid, (CK_UTF8CHAR_PTR) ascii_pin_so, strlen (ascii_pin_so), (CK_UTF8CHAR_PTR) TOKENLABEL_32CHARS));
 	} else {
@@ -852,13 +944,22 @@ void inittoken (void) {
 
 
 /* Commandline options */
-static const char *opts = "hp:s:l:";	// excluding shorthand -X
+static const char *opts = "hvfp:P:l:m:";	// excluding shorthand -X
 static const struct option longopts[] = {
 	{ "help", 0, NULL, 'h' },
+	{ "verbose", 2, NULL, 'v' },
 	{ "pin", 1, NULL, 'p' },
-	{ "so-pin", 1, NULL, 's' },
+	{ "so-pin", 1, NULL, 'P' },
 	{ "pkcs11lib",1, NULL, 'l' },
 	{ "destructive", 0, NULL, 'X' },
+	{ "frivolous", 0, NULL, 'f' },
+	{ "fast-and-frivolous", 0, NULL, 'f' },
+	{ "max-keypairs", 1, NULL, 'm' },
+	// { "max-keys", 1, NULL, 'm' },
+	{ "skip-initiation", 0, NULL, 1 },
+	{ "skip-fragmentation", 0, NULL, 2 },
+	{ "skip-keysizing", 0, NULL, 3 },
+	{ "skip-signing", 0, NULL, 4 },
 	// { "token", 1, NULL, 't' },
 	//? { "interactive", 1, NULL, 'i' },
 	//? { "xmlfile", 1, NULL, 'i' },
@@ -918,7 +1019,7 @@ int main (int argc, char *argv []) {
 			storepin ("user", optarg, ascii_pin_user, sizeof (ascii_pin_user) - 1);
 			break;
 			
-		case 's':	// --so-pin
+		case 'P':	// --so-pin
 			storepin ("SO", optarg, ascii_pin_so, sizeof (ascii_pin_so) - 1);
 			break;
 		case 'l':	// --pkcs1llib
@@ -926,17 +1027,12 @@ int main (int argc, char *argv []) {
 				fprintf (stderr, "You should not open multiple PKCS #11 libraries\n");
 				exit (1);
 			}
-			if (strstr (argv [1], "softhsm")) {
-				fprintf (stderr, "WARNING -- It appears you are using the SoftHSM library.\nIt may not constrain memory size, causing this test to run extremely long.\n");
-			}
 			p11 = dlopen (optarg, RTLD_NOW | RTLD_GLOBAL);
 			if (!p11) {
 				fprintf (stderr, "%s\n", dlerror ());
 				exit (1);
 			}
 			break;
-		// case 't':
-		// Token?
 		case 'X':	// --destructive
 			if (destructive) {
 				fprintf (stderr, "You should not specify your destructive wishes more than once\n");
@@ -944,6 +1040,69 @@ int main (int argc, char *argv []) {
 			}
 			destructive = 1;
 			break;
+		case 'f':	// --fast-and-frivolous
+			if (thousands < 1000) {
+				fprintf (stderr, "You should not specify the fast option more than once\n");
+				exit (1);
+			}
+			thousands = 10;
+			hundred = 8;
+			couple = 3;
+			break;
+#if 0
+		case 'm':	// --max-keypairs
+			if (max_keypairs > 0) {
+				fprintf (stderr, "You should not specify the maximum number of key pairs more than once\n");
+				exit (1);
+			}
+			max_keypairs = atoi (optarg);
+			if (max_keypairs <= 0) {
+				fprintf (stderr, "You should specify a positive integer for the maximum number of keypairs\n");
+				exit (1);
+			}
+			break;
+#endif
+		case 'v':		// --verbose
+			if (optarg) {
+				verbosity = atoi (optarg);
+				if (verbosity < 0) {
+					fprintf (stderr, "You should not specify negative verbosity levels\n");
+					exit (1);
+				}
+			} else {
+				verbosity++;
+			}
+			break;
+		case 1:			// --skip-initiation
+			if (skip_initiation) {
+				fprintf (stderr, "You should not specify --skip-initiation more than once\n");
+				exit (1);
+			}
+			skip_initiation = 1;
+			break;
+		case 2:			// --skip-fragmentation
+			if (skip_fragmentation) {
+				fprintf (stderr, "You should not specify --skip-fragmentation more than once\n");
+				exit (1);
+			}
+			skip_fragmentation = 1;
+			break;
+		case 3:			// --skip-keysizing
+			if (skip_keysizing) {
+				fprintf (stderr, "You should not specify --skip-keysizing more than once\n");
+				exit (1);
+			}
+			skip_keysizing = 1;
+			break;
+		case 4:			// --skip-signing
+			if (skip_signing) {
+				fprintf (stderr, "You should not specify --skip-signing more than once\n");
+				exit (1);
+			}
+			skip_signing = 1;
+			break;
+		// case 't':
+		// Token?
 		case -1:		// Done -- but are we, really?
 			if ((*ascii_pin_user) && (*ascii_pin_so) && p11) {
 				todo = 0;
@@ -954,7 +1113,7 @@ int main (int argc, char *argv []) {
 		case 'h':
 		case ':':
 		case '?':
-			fprintf (stderr, "Usage: %s [--destructive] --pin 1234 --so-pin 4321 --pkcs11lib /path/to/libpkcs11.so\n", argv [0]);
+			fprintf (stderr, "Minimal usage: %s --pin 1234 --so-pin 4321 --pkcs11lib /path/to/libpkcs11.so\n", argv [0]);
 			exit (opt != 'h');
 		}
 	}
@@ -974,21 +1133,29 @@ int main (int argc, char *argv []) {
 		fprintf (stderr, "Failed to allocate all test suites -- this is abnormal\n");
 		exit (1);
 	}
-	if (! CU_add_test (st [0], "Initiation test", testslot_initiation)) {
-		fprintf (stderr, "Failed to register test #0 -- this is abnormal\n");
-		exit (1);
+	if (! skip_initiation) {
+		if (! CU_add_test (st [0], "Initiation test", testslot_initiation)) {
+			fprintf (stderr, "Failed to register test #0 -- this is abnormal\n");
+			exit (1);
+		}
 	}
-	if (! CU_add_test (st [1], "Fragmentation test", testslot_fragmentation)) {
-		fprintf (stderr, "Failed to register test #1 -- this is abnormal\n");
-		exit (1);
+	if (! skip_fragmentation) {
+		if (! CU_add_test (st [1], "Fragmentation test", testslot_fragmentation)) {
+			fprintf (stderr, "Failed to register test #1 -- this is abnormal\n");
+			exit (1);
+		}
 	}
-	if (! CU_add_test (st [2], "Key sizing test", testslot_keysizing)) {
-		fprintf (stderr, "Failed to register test #2 -- this is abnormal\n");
-		exit (1);
+	if (! skip_keysizing) {
+		if (! CU_add_test (st [2], "Key sizing test", testslot_keysizing)) {
+			fprintf (stderr, "Failed to register test #2 -- this is abnormal\n");
+			exit (1);
+		}
 	}
-	if (! CU_add_test (st [3], "Signing test", testslot_signing)) {
-		fprintf (stderr, "Failed to register test #3 -- this is abnormal\n");
-		exit (1);
+	if (! skip_signing) {
+		if (! CU_add_test (st [3], "Signing test", testslot_signing)) {
+			fprintf (stderr, "Failed to register test #3 -- this is abnormal\n");
+			exit (1);
+		}
 	}
 
 	/*
@@ -1030,8 +1197,14 @@ int main (int argc, char *argv []) {
 	/*
 	 * Automatically run all the tests that were registered
 	 */
+	if (verbosity >= 1) {
+		printf ("Beginning test sequence\n");
+	}
 	CU_list_tests_to_file ();
 	CU_automated_run_tests ();
+	if (verbosity >= 1) {
+		printf ("Ended test sequence\n");
+	}
 
 	/*
 	 * Unload the PKCS #11 library
