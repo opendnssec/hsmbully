@@ -18,5 +18,8 @@ echo
 echo ============
 echo Running test
 echo ============
-./quickndirty-hsmbully
-# gdb --tui ./quickndirty-hsmbully
+#
+# --skip-fragmentation: SoftHSM memory is virtually unbounded!
+#
+nice hsmbully --verbose=4 --skip-fragmentation --pin=1234 --so-pin 4321 --pkcs11lib=/usr/local/lib/libsofthsm.so
+echo Exit value $?

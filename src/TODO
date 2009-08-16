@@ -4,7 +4,6 @@
 + Incorporate commandline options --pin --so-pin --pkcs11lib for normal testing
 + Incorporate commandline option --destructive to destroy previous HSM content
 + Incorporate commandline option --fast-and-frivolous for quick 'n' dirty tests
-X Incorporate commandline option --max-keypairs for unlimited/large key memory
 + Incorporate commandline options --skip-testname
 - Incorporate commandline option --token or so for token identification
 - Incorporate commandline options from cunit-stephen

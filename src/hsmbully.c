@@ -148,9 +148,6 @@ static int thousands = 2500;
 static int hundred = 100;
 static int couple = 10;
 
-/* How many key pairs to generate maximally?  0 means infinite */
-static int max_keypairs = 0;
-
 /* What verbosity level has been requested?  Start is 1 */
 static int verbosity = 1;
 
@@ -257,10 +254,6 @@ void testslot_initiation (void) {
 	CK_SESSION_HANDLE seshdl;
 	CK_BYTE noappinfo;
 	int initestctr;
-
-	if (skip_initiation) {
-		return;
-	}
 
 	/* Announce the start of this test */
 	if (verbosity >= 1) {
@@ -505,10 +498,6 @@ void testslot_fragmentation (void) {
 	int testctr;
 	CK_RV retval;
 
-	if (skip_fragmentation) {
-		return;
-	}
-
 	/* Announce the start of this test */
 	if (verbosity >= 1) {
 		printf ("Entering fragmentation test\n");
@@ -566,13 +555,6 @@ void testslot_fragmentation (void) {
 	retval = CKR_OK;
 	while ( retval == CKR_OK ) {
 		CK_ULONG keybits;
-
-		if (max_keypairs > 0) {
-			if (keypairs == max_keypairs) {
-				CU_FAIL ("Hit maximum number of key pairs to generate before the device's memory was full");
-				break;
-			}
-		}
 
 		keybits = 8 * randomish_minmax (minbytes, maxbytes);
 		keys = realloc (keys, sizeof (keys [0]) * (keypairs+1));
@@ -667,10 +649,6 @@ void testslot_keysizing (void) {
 	CK_ULONG minbytes, maxbytes, curbytes;
 
 	CK_RV retval;
-
-	if (skip_keysizing) {
-		return;
-	}
 
 	/* Announce the start of this test */
 	if (verbosity >= 1) {
@@ -803,10 +781,6 @@ void testslot_signing (void) {
 	int minbytes, maxbytes;
 
 	int keytestctr, sigtestctr;
-
-	if (skip_signing) {
-		return;
-	}
 
 	/* Announce the start of this test */
 	if (verbosity >= 1) {
@@ -1071,19 +1045,6 @@ int main (int argc, char *argv []) {
 			hundred = 8;
 			couple = 3;
 			break;
-#if 0
-		case 'm':	// --max-keypairs
-			if (max_keypairs > 0) {
-				fprintf (stderr, "You should not specify the maximum number of key pairs more than once\n");
-				exit (1);
-			}
-			max_keypairs = atoi (optarg);
-			if (max_keypairs <= 0) {
-				fprintf (stderr, "You should specify a positive integer for the maximum number of keypairs\n");
-				exit (1);
-			}
-			break;
-#endif
 		case 'v':		// --verbose
 			if (optarg) {
 				verbosity = atoi (optarg);
@@ -1157,30 +1118,30 @@ int main (int argc, char *argv []) {
 		fprintf (stderr, "Failed to allocate all test suites -- this is abnormal\n");
 		exit (1);
 	}
-	// if (! skip_initiation) {
+	if (! skip_initiation) {
 		if (! CU_add_test (st [0], "Initiation test", testslot_initiation)) {
 			fprintf (stderr, "Failed to register test #0 -- this is abnormal\n");
 			exit (1);
 		}
-	// }
-	// if (! skip_fragmentation) {
+	}
+	if (! skip_fragmentation) {
 		if (! CU_add_test (st [1], "Fragmentation test", testslot_fragmentation)) {
 			fprintf (stderr, "Failed to register test #1 -- this is abnormal\n");
 			exit (1);
 		}
-	// }
-	// if (! skip_keysizing) {
+	}
+	if (! skip_keysizing) {
 		if (! CU_add_test (st [2], "Key sizing test", testslot_keysizing)) {
 			fprintf (stderr, "Failed to register test #2 -- this is abnormal\n");
 			exit (1);
 		}
-	// }
-	// if (! skip_signing) {
+	}
+	if (! skip_signing) {
 		if (! CU_add_test (st [3], "Signing test", testslot_signing)) {
 			fprintf (stderr, "Failed to register test #3 -- this is abnormal\n");
 			exit (1);
 		}
-	// }
+	}
 
 	/*
 	 * Initialise the library and demand only one slot with a token.
