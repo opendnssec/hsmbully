@@ -1,0 +1,123 @@
+.TH HSMBULLY 1 "$Revision:$"
+.SH NAME
+hsmbully \- Test a PKCS #11 token for OpenDNSSEC suitability
+.SH SYNOPSIS
+.B hsmbully
+[\fBoptions\fR]...
+.SH DESCRIPTION
+.PP
+The hsmbully tool is designed to verify if a token, HSM or other PKCS #11
+implementation suffices to support OpenDNSSEC.  As it is intended to avoid
+setting up OpenDNSSEC fully on the token, it cannot give absolute certainty
+that a token will suffice, but in most cases it can give an early warning
+if the token will give problems when running fullblown OpenDNSSEC.
+.PP
+There are two modes of operation for hsmbully; one is destructive, meaning
+that all the contents on the token will be wiped, and the token will be
+erased.  The other mode of operation is non-destructive; in that mode the
+space left in the token is used for testing.  It is up to the tester to
+ensure that a fair amount of space is available to increase the likelyhood
+of testing properly, which means that at least a number of keys should be
+able to co-exist in the remaining space.  The default mode of operation is
+non-destructive, but this choice of default was made for reasons of safety
+rather than to get the sharpest test results.
+.PP
+The tests run by hsmbully take hours to complete.  The results are reported
+through the CUnit framework, and dumped into an XML file.  The intermediate
+objects created on the token for tests will be removed after successful
+termination of hsmbully.
+.PP
+The current version of hsmbully assumes to find only a single slot with a
+token in it.  If not, it will bail out and complain that it does not know
+what token to bully.
+.SH OPTIONS
+.PP
+Several options to hsmbully are required options.  You must always specify
+\fB\-\-pin\fR, \fB\-\-so\-pin\fR and \fB\-\-pkcs11lib\R.
+.TP
+\fB\-\-destructive\fR
+destroy all contents on the token.  This means that the \fB\-\-pin\fR and
+\fB\-\-so\-pin\fR options are interpreted as values to set, rather than as
+values to use for login.  There is no single-character option alias for
+this long option.
+.TP
+\fB\-\-pin=PIN\fR, \fB-p PIN\fR
+specifies the user PIN to be used by hsmbully.  If \fB\-\-destructive\fR
+is also specified, this PIN is set rather than just used to login.  In
+that case, the PIN will remain on the token even after all other objects
+are removed.
+.TP
+\fB\-\-so\-pin=PIN\fR, \fB-s PIN\fR
+specifies the security officer PIN, also known as the SO-PIN, to be used
+by hsmbully.  If \fB\-\-destructive\fR is also specified, this PIN is set
+rather than just used to login.  In that case, the PIN will remain on the
+token even after all other objects are removed.
+.TP
+\fB\-\-pkcs11lib=PIN\fR, \fB-l /path/to/lib.so\fR
+specifies the PKCS #11 library to use.  This must be a shared library that
+adheres to the PKCS #11 specifications from RSA Laboratories.  It will be
+addressed as a dynamic library.
+.\" TODO: --token
+.\" TODO: --quick
+.\" TODO: --interactive/CUnit
+.SH "TESTS PERFORMED"
+The following tests are performed as part of a run of hsmbully:
+.TP
+\fBInitiation test\fR
+This tests if the HSM properly handles all sorts of orders of opening and
+closing access to the resources on the token.  The sequences tested
+deliberately include invalid accesses, such as not logging on and seeing
+if a previous sesssion's login is reused.  If the token sustains this test,
+it appears to be a proper implementation of those aspects of PKCS #11.
+\fBFragmentation test\fR
+This tests if memory can sustain a long list of creations and deletions of
+keys, without ending up with fragmented memory.  This test starts by filling
+up all free space in the token with keys of various sizes, and then removes
+arbitrary ones and expects to be able to recreate a new one of the same size
+immediately after that.
+\fBKey sizing test\fR
+This tests if the key sizes supported by the token are within reasonable
+constraints, if they match the algorithms used by OpenDNSSEC and if the
+claimed key size range is covered as PKCS #11 prescribes.  The test is done
+by creating key pairs and verifying the size of the modulus of the public
+key.
+\fBSigning test\fR
+This tests if the signatures are made properly.  Signatures are constructed
+at a variety of key sizes within the supported range.
+.SH "SEE ALSO"
+opendnssec(1)
+.SH COPYRIGHT
+Copyright (c) 2009 OpenFortress
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+.TP 3
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+.TP 3
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+.PP
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+.SH AUTHOR
+.PP
+Rick van Rein <rick@openfortress.nl>
+.PP
+See http://opendnssec.org/ for the latest version and,
+perhaps, bugs.  In general, use the version of hsmbully that comes with the
+version of OpenDNSSEC you are testing.
