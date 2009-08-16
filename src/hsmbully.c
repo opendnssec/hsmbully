@@ -160,6 +160,9 @@ static int skip_fragmentation = 0;
 static int skip_keysizing = 0;
 static int skip_signing = 0;
 
+/* Is the CU setup open (should it be closed upon exit)? */
+static int cu_open = 0;
+
 
 /* =============================================================== */
 
@@ -254,6 +257,10 @@ void testslot_initiation (void) {
 	CK_SESSION_HANDLE seshdl;
 	CK_BYTE noappinfo;
 	int initestctr;
+
+	if (skip_initiation) {
+		return;
+	}
 
 	/* Announce the start of this test */
 	if (verbosity >= 1) {
@@ -498,6 +505,10 @@ void testslot_fragmentation (void) {
 	int testctr;
 	CK_RV retval;
 
+	if (skip_fragmentation) {
+		return;
+	}
+
 	/* Announce the start of this test */
 	if (verbosity >= 1) {
 		printf ("Entering fragmentation test\n");
@@ -657,6 +668,10 @@ void testslot_keysizing (void) {
 
 	CK_RV retval;
 
+	if (skip_keysizing) {
+		return;
+	}
+
 	/* Announce the start of this test */
 	if (verbosity >= 1) {
 		printf ("Entering keysizing test\n");
@@ -789,6 +804,10 @@ void testslot_signing (void) {
 
 	int keytestctr, sigtestctr;
 
+	if (skip_signing) {
+		return;
+	}
+
 	/* Announce the start of this test */
 	if (verbosity >= 1) {
 		printf ("Entering signing test\n");
@@ -918,13 +937,16 @@ void testslot_signing (void) {
 /* Bail out is the routine that does some cleaning up upon exit().
  */
 void bailout (void) {
-	TESTRV ("Finalising PKCS #11 library",
-		 P11("C_Finalize") (NULL_PTR));
 	if (p11) {
+		TESTRV ("Finalising PKCS #11 library",
+			 P11("C_Finalize") (NULL_PTR));
 		dlclose (p11);
 		p11 = NULL;
 	}
-	CU_cleanup_registry ();
+	if (cu_open) {
+		CU_cleanup_registry ();
+		cu_open = 0;
+	}
 }
 
 
@@ -1124,6 +1146,8 @@ int main (int argc, char *argv []) {
 	if (CU_initialize_registry () != CUE_SUCCESS) {
 		fprintf (stderr, "Failed to initialise test registry -- this is abnormal\n");
 		exit (1);
+	} else {
+		cu_open = 1;
 	}
 	st [0] = CU_add_suite ("Test if slot initiation works properly", NULL, NULL);
 	st [1] = CU_add_suite ("Test if memory does not get fragmented", NULL, NULL);
@@ -1133,30 +1157,30 @@ int main (int argc, char *argv []) {
 		fprintf (stderr, "Failed to allocate all test suites -- this is abnormal\n");
 		exit (1);
 	}
-	if (! skip_initiation) {
+	// if (! skip_initiation) {
 		if (! CU_add_test (st [0], "Initiation test", testslot_initiation)) {
 			fprintf (stderr, "Failed to register test #0 -- this is abnormal\n");
 			exit (1);
 		}
-	}
-	if (! skip_fragmentation) {
+	// }
+	// if (! skip_fragmentation) {
 		if (! CU_add_test (st [1], "Fragmentation test", testslot_fragmentation)) {
 			fprintf (stderr, "Failed to register test #1 -- this is abnormal\n");
 			exit (1);
 		}
-	}
-	if (! skip_keysizing) {
+	// }
+	// if (! skip_keysizing) {
 		if (! CU_add_test (st [2], "Key sizing test", testslot_keysizing)) {
 			fprintf (stderr, "Failed to register test #2 -- this is abnormal\n");
 			exit (1);
 		}
-	}
-	if (! skip_signing) {
+	// }
+	// if (! skip_signing) {
 		if (! CU_add_test (st [3], "Signing test", testslot_signing)) {
 			fprintf (stderr, "Failed to register test #3 -- this is abnormal\n");
 			exit (1);
 		}
-	}
+	// }
 
 	/*
 	 * Initialise the library and demand only one slot with a token.
@@ -1217,7 +1241,10 @@ int main (int argc, char *argv []) {
 	/*
 	 * Terminate without error-reporting return value.
 	 */
-	CU_cleanup_registry ();
+	if (cu_open) {
+		CU_cleanup_registry ();
+		cu_open = 0;
+	}
 	exit (0);
 }
 
