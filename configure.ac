@@ -33,8 +33,13 @@ AC_TYPE_SIZE_T
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 
-ACX_CUNIT
 ACX_DLOPEN
+
+ACX_CUNIT
+
+if test -z "$CUNIT_LIBS"; then
+	AC_MSG_ERROR([cunit library required])
+fi
 
 AC_ARG_WITH(pkcs11-softhsm, 
 	AS_HELP_STRING([--with-pkcs11-softhsm=PATH],[specify path of SoftHSM library to use for regression testing (default PREFIX/lib/libsofthsm.so)]),
