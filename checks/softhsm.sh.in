@@ -13,4 +13,9 @@ echo "0:hsmbully.db" >${SOFTHSM_CONF}
 
 softhsm --init-token --slot 0 --label 'hsmbully test token' --pin ${USER_PIN} --so-pin ${SO_PIN}
 
-../src/hsmbully --pin ${USER_PIN} --so-pin ${SO_PIN} --pkcs11lib @pkcs11_softhsm_module@
+../src/hsmbully \
+	--pin ${USER_PIN} \
+	--so-pin ${SO_PIN} \
+	--verbose=4 \
+	--skip-fragmentation \
+	--pkcs11lib @pkcs11_softhsm_module@
