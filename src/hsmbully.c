@@ -594,7 +594,7 @@ void testslot_fragmentation (void) {
 	for (testctr = 0; testctr < thousands; testctr++) {
 		int victim = randomish (keypairs);
 		if (verbosity >= 3) {
-			printf ("   - Removing a %d bit key pair, expecting to free the memory for a new one\n", keys [victim].modbits);
+			printf ("   - Removing a %lu bit key pair, expecting to free the memory for a new one\n", keys [victim].modbits);
 			if (verbosity >= 4) {
 				printf ("%8d\b\b\b\b\b\b\b\b", thousands-testctr);
 			}
