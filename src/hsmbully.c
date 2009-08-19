@@ -201,36 +201,36 @@ CK_RV newkeypair (CK_SESSION_HANDLE seshdl,
 		  CK_OBJECT_HANDLE_PTR pub,
 		  CK_OBJECT_HANDLE_PTR priv) {
 	CK_BYTE pubexp [] = { 0x01, 0x00, 0x01 }; // anyEndian anagram!
-	CK_BBOOL true = TRUE;
-	CK_BBOOL false = FALSE;
+	CK_BBOOL ckTrue = CK_TRUE;
+	CK_BBOOL ckFalse = CK_FALSE;
 	CK_MECHANISM mech = { CKM_RSA_PKCS_KEY_PAIR_GEN, NULL_PTR, 0 };
 	CK_ATTRIBUTE pubtmpl [] = {
-		{ CKA_PRIVATE, &false, sizeof (false) },
+		{ CKA_PRIVATE, &ckFalse, sizeof (ckFalse) },
 		{ CKA_MODULUS_BITS, &keybits, sizeof (keybits) },
 		{ CKA_PUBLIC_EXPONENT, &pubexp, sizeof (pubexp) },
-		{ CKA_TOKEN, &true, sizeof (true) },
-		{ CKA_LOCAL, &true, sizeof (true) },
-		{ CKA_MODIFIABLE, &false, sizeof (false) },
-		{ CKA_VERIFY, &true, sizeof (true) },
-		{ CKA_VERIFY_RECOVER, &false, sizeof (false) },
-		{ CKA_WRAP, &false, sizeof (false) },
-		{ CKA_DERIVE, &false, sizeof (false) },
-		{ CKA_ENCRYPT, &false, sizeof (false) },
+		{ CKA_TOKEN, &ckTrue, sizeof (ckTrue) },
+		{ CKA_LOCAL, &ckTrue, sizeof (ckTrue) },
+		{ CKA_MODIFIABLE, &ckFalse, sizeof (ckFalse) },
+		{ CKA_VERIFY, &ckTrue, sizeof (ckTrue) },
+		{ CKA_VERIFY_RECOVER, &ckFalse, sizeof (ckFalse) },
+		{ CKA_WRAP, &ckFalse, sizeof (ckFalse) },
+		{ CKA_DERIVE, &ckFalse, sizeof (ckFalse) },
+		{ CKA_ENCRYPT, &ckFalse, sizeof (ckFalse) },
 	};
 	CK_ATTRIBUTE privtmpl [] = {
-		{ CKA_PRIVATE, &true, sizeof (true) },
-		{ CKA_TOKEN, &true, sizeof (true) },
-		{ CKA_MODIFIABLE, &false, sizeof (false) },
-		{ CKA_LOCAL, &true, sizeof (true) },
-		{ CKA_SENSITIVE, &true, sizeof (true) },
-		{ CKA_ALWAYS_SENSITIVE, &true, sizeof (true) },
-		{ CKA_EXTRACTABLE, &false, sizeof (false) },
-		{ CKA_NEVER_EXTRACTABLE, &true, sizeof (true) },
-		{ CKA_SIGN, &true, sizeof (true) },
-		{ CKA_SIGN_RECOVER, &false, sizeof (false) },
-		{ CKA_DECRYPT, &false, sizeof (false) },
-		{ CKA_UNWRAP, &false, sizeof (false) },
-		{ CKA_DERIVE, &false, sizeof (false) },
+		{ CKA_PRIVATE, &ckTrue, sizeof (ckTrue) },
+		{ CKA_TOKEN, &ckTrue, sizeof (ckTrue) },
+		{ CKA_MODIFIABLE, &ckFalse, sizeof (ckFalse) },
+		{ CKA_LOCAL, &ckTrue, sizeof (ckTrue) },
+		{ CKA_SENSITIVE, &ckTrue, sizeof (ckTrue) },
+		{ CKA_ALWAYS_SENSITIVE, &ckTrue, sizeof (ckTrue) },
+		{ CKA_EXTRACTABLE, &ckFalse, sizeof (ckFalse) },
+		{ CKA_NEVER_EXTRACTABLE, &ckTrue, sizeof (ckTrue) },
+		{ CKA_SIGN, &ckTrue, sizeof (ckTrue) },
+		{ CKA_SIGN_RECOVER, &ckFalse, sizeof (ckFalse) },
+		{ CKA_DECRYPT, &ckFalse, sizeof (ckFalse) },
+		{ CKA_UNWRAP, &ckFalse, sizeof (ckFalse) },
+		{ CKA_DERIVE, &ckFalse, sizeof (ckFalse) },
 	};
 	if (verbosity >= 3) {
 		printf ("   - Creating key pair with %lu bit modulus\n", keybits);
