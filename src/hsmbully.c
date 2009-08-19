@@ -233,7 +233,7 @@ CK_RV newkeypair (CK_SESSION_HANDLE seshdl,
 		{ CKA_DERIVE, &false, sizeof (false) },
 	};
 	if (verbosity >= 3) {
-		printf ("   - Creating key pair with %d bit modulus\n", keybits);
+		printf ("   - Creating key pair with %lu bit modulus\n", keybits);
 	}
 	return P11("C_GenerateKeyPair") (
 			seshdl,
@@ -693,7 +693,7 @@ void testslot_keysizing (void) {
 	minbytes = mech_sha1_rsa_pkcs.ulMinKeySize / 8;
 	maxbytes = mech_sha1_rsa_pkcs.ulMaxKeySize / 8;
 	if (verbosity >= 3) {
-		printf ("   - Key sizes supported by this token range from %d to %d bits\n", minbytes * 8, maxbytes * 8);
+		printf ("   - Key sizes supported by this token range from %lu to %lu bits\n", minbytes * 8, maxbytes * 8);
 	}
 
 	/*
@@ -712,7 +712,7 @@ void testslot_keysizing (void) {
 		};
 		uint8_t *modulus;
 		if (verbosity >= 4) {
-			printf ("%8d\b\b\b\b\b\b\b\b", maxbytes-curbytes);
+			printf ("%8lu\b\b\b\b\b\b\b\b", maxbytes-curbytes);
 		}
 		retval = newkeypair (seshdl, modbits, &pub, &priv);
 		TESTRV ("Creating key pair in modulus size test", retval);
@@ -979,7 +979,7 @@ void storepin (char *kind, char *newval, char *dest, size_t maxstrlen) {
 		exit (1);
 	}
 	if (strlen (newval) > maxstrlen) {
-		fprintf (stderr, "The %s PIN should not exceed %d characters\n", kind, maxstrlen);
+		fprintf (stderr, "The %s PIN should not exceed %lu characters\n", kind, maxstrlen);
 		exit (1);
 	}
 	this = newval;
