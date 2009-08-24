@@ -81,13 +81,14 @@ fullblown testing with far fewer loop-arounds.  Note that the outcome of
 hsmbully is generated faster, but it is less likely to find potential problems
 in the token under test.
 .TP
-\fB\-\-skip\-initiation\fR
-Skip the Initiation Test, as described under
+\fB\-\-test\-initiation\fR
+Perform the Initiation Test, as described under
 .SM
 .B "TESTS PERFORMED"
-below.  This may be useful if a token is known broken in this area, but
-still thought to be serious material for OpenDNSSEC.  Be very sure what
-you are doing though, you may be leaking keys before you know it.
+below.  This test is off by default, as it tests more than what OpenDNSSEC
+demands of the token; it verifies if the token properly handles incorrect
+sequences of logging in, etc.  We have seen this crash at least one widely
+available commercial token, so this test should be applied with some care.
 .TP
 \fB\-\-skip\-fragmentation\fR
 Skip the Fragmentation Test, as described under

@@ -152,7 +152,7 @@ static int couple = 10;
 static int verbosity = 1;
 
 /* Should certain tests be skipped altogether? */
-static int skip_initiation = 0;
+static int skip_initiation = 1;
 static int skip_fragmentation = 0;
 static int skip_keysizing = 0;
 static int skip_signing = 0;
@@ -952,7 +952,7 @@ static const struct option longopts[] = {
 	{ "fast-and-frivolous", 0, NULL, 'f' },
 	{ "max-keypairs", 1, NULL, 'm' },
 	// { "max-keys", 1, NULL, 'm' },
-	{ "skip-initiation", 0, NULL, 1 },
+	{ "test-initiation", 0, NULL, 1 },
 	{ "skip-fragmentation", 0, NULL, 2 },
 	{ "skip-keysizing", 0, NULL, 3 },
 	{ "skip-signing", 0, NULL, 4 },
@@ -1056,12 +1056,12 @@ int main (int argc, char *argv []) {
 				verbosity++;
 			}
 			break;
-		case 1:			// --skip-initiation
-			if (skip_initiation) {
-				fprintf (stderr, "You should not specify --skip-initiation more than once\n");
+		case 1:			// --test-initiation
+			if (skip_initiation == 0) {
+				fprintf (stderr, "You should not specify --test-initiation more than once\n");
 				exit (1);
 			}
-			skip_initiation = 1;
+			skip_initiation = 0;
 			break;
 		case 2:			// --skip-fragmentation
 			if (skip_fragmentation) {
