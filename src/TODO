@@ -1,4 +1,4 @@
-- Only the used CKM_xxx should be employed in this test.
++ Only the used CKM_xxx should be employed in this test.
 - There is no testing of C_SignUpdate or C_VerifyUpdate
 + We de not test concurrent PKCS #11 access because we cannot exhaust that
 + Incorporate commandline options --pin --so-pin --pkcs11lib for normal testing

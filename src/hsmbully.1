@@ -86,9 +86,8 @@ Perform the Initiation Test, as described under
 .SM
 .B "TESTS PERFORMED"
 below.  This test is off by default, as it tests more than what OpenDNSSEC
-demands of the token; it verifies if the token properly handles incorrect
-sequences of logging in, etc.  We have seen this crash at least one widely
-available commercial token, so this test should be applied with some care.
+does with a token.  Be a bit careful when using this option; we have seen
+at least one widely used commercial HSM crash on it.
 .TP
 \fB\-\-skip\-fragmentation\fR
 Skip the Fragmentation Test, as described under

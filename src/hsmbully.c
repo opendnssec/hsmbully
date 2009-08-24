@@ -129,10 +129,10 @@ typedef CK_RV p11fn ();
 static void *p11 = NULL;
 
 static CK_MECHANISM_INFO mech_rsa_pkcs_key_pair_gen;
-static CK_MECHANISM_INFO mech_sha1_rsa_pkcs;
+static CK_MECHANISM_INFO mech_rsa_pkcs;
 // static CK_MECHANISM_INFO mech_sha256_rsa_pkcs;	/* for future use */
 // static CK_MECHANISM_INFO mech_sha512_rsa_pkcs;	/* for future use */
-static CK_MECHANISM_INFO mech_sha_1;
+// static CK_MECHANISM_INFO mech_sha_1;
 // static CK_MECHANISM_INFO mech_sha256;		/* for future use? */
 // static CK_MECHANISM_INFO mech_sha512;		/* for future use? */
 
@@ -533,13 +533,13 @@ void testslot_fragmentation (void) {
 	if (verbosity >= 2) {
 		printf (" * Determine key sizes\n");
 	}
-	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMinKeySize % 8, 0);
-	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMaxKeySize % 8, 0);
-	CU_ASSERT (mech_sha1_rsa_pkcs.ulMinKeySize <= mech_sha1_rsa_pkcs.ulMaxKeySize);
-	CU_ASSERT (mech_sha1_rsa_pkcs.ulMinKeySize <= 512);
-	CU_ASSERT (mech_sha1_rsa_pkcs.ulMaxKeySize >= 2048);
-	minbytes = mech_sha1_rsa_pkcs.ulMinKeySize / 8;
-	maxbytes = mech_sha1_rsa_pkcs.ulMaxKeySize / 8;
+	CU_ASSERT_EQUAL (mech_rsa_pkcs.ulMinKeySize % 8, 0);
+	CU_ASSERT_EQUAL (mech_rsa_pkcs.ulMaxKeySize % 8, 0);
+	CU_ASSERT (mech_rsa_pkcs.ulMinKeySize <= mech_rsa_pkcs.ulMaxKeySize);
+	CU_ASSERT (mech_rsa_pkcs.ulMinKeySize <= 512);
+	CU_ASSERT (mech_rsa_pkcs.ulMaxKeySize >= 2048);
+	minbytes = mech_rsa_pkcs.ulMinKeySize / 8;
+	maxbytes = mech_rsa_pkcs.ulMaxKeySize / 8;
 	if (verbosity >= 3) {
 		printf ("   - Key sizes supported by this token range from %d to %d bits\n", minbytes * 8, maxbytes * 8);
 	}
@@ -685,13 +685,13 @@ void testslot_keysizing (void) {
 	if (verbosity >= 2) {
 		printf (" * Determine key sizes\n");
 	}
-	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMinKeySize % 8, 0);
-	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMaxKeySize % 8, 0);
-	CU_ASSERT (mech_sha1_rsa_pkcs.ulMinKeySize <= mech_sha1_rsa_pkcs.ulMaxKeySize);
-	CU_ASSERT (mech_sha1_rsa_pkcs.ulMinKeySize <= 512);
-	CU_ASSERT (mech_sha1_rsa_pkcs.ulMaxKeySize >= 2048);
-	minbytes = mech_sha1_rsa_pkcs.ulMinKeySize / 8;
-	maxbytes = mech_sha1_rsa_pkcs.ulMaxKeySize / 8;
+	CU_ASSERT_EQUAL (mech_rsa_pkcs.ulMinKeySize % 8, 0);
+	CU_ASSERT_EQUAL (mech_rsa_pkcs.ulMaxKeySize % 8, 0);
+	CU_ASSERT (mech_rsa_pkcs.ulMinKeySize <= mech_rsa_pkcs.ulMaxKeySize);
+	CU_ASSERT (mech_rsa_pkcs.ulMinKeySize <= 512);
+	CU_ASSERT (mech_rsa_pkcs.ulMaxKeySize >= 2048);
+	minbytes = mech_rsa_pkcs.ulMinKeySize / 8;
+	maxbytes = mech_rsa_pkcs.ulMaxKeySize / 8;
 	if (verbosity >= 3) {
 		printf ("   - Key sizes supported by this token range from %lu to %lu bits\n", minbytes * 8, maxbytes * 8);
 	}
@@ -817,13 +817,13 @@ void testslot_signing (void) {
 	if (verbosity >= 2) {
 		printf (" * Determine key sizes\n");
 	}
-	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMinKeySize % 8, 0);
-	CU_ASSERT_EQUAL (mech_sha1_rsa_pkcs.ulMaxKeySize % 8, 0);
-	CU_ASSERT (mech_sha1_rsa_pkcs.ulMinKeySize <= mech_sha1_rsa_pkcs.ulMaxKeySize);
-	CU_ASSERT (mech_sha1_rsa_pkcs.ulMinKeySize <= 512);
-	CU_ASSERT (mech_sha1_rsa_pkcs.ulMaxKeySize >= 2048);
-	minbytes = mech_sha1_rsa_pkcs.ulMinKeySize / 8;
-	maxbytes = mech_sha1_rsa_pkcs.ulMaxKeySize / 8;
+	CU_ASSERT_EQUAL (mech_rsa_pkcs.ulMinKeySize % 8, 0);
+	CU_ASSERT_EQUAL (mech_rsa_pkcs.ulMaxKeySize % 8, 0);
+	CU_ASSERT (mech_rsa_pkcs.ulMinKeySize <= mech_rsa_pkcs.ulMaxKeySize);
+	CU_ASSERT (mech_rsa_pkcs.ulMinKeySize <= 512);
+	CU_ASSERT (mech_rsa_pkcs.ulMaxKeySize >= 2048);
+	minbytes = mech_rsa_pkcs.ulMinKeySize / 8;
+	maxbytes = mech_rsa_pkcs.ulMaxKeySize / 8;
 	if (verbosity >= 3) {
 		printf ("   - Key sizes supported by this token range from %d to %d bits\n", minbytes * 8, maxbytes * 8);
 	}
@@ -854,7 +854,7 @@ void testslot_signing (void) {
 			CK_BYTE data [] = "tralala-en-hopsasa";
 			CK_BYTE *sig = malloc (maxbytes);
 			CK_ULONG siglen;
-			CK_MECHANISM mech = { CKM_SHA1_RSA_PKCS, NULL_PTR, 0 };
+			CK_MECHANISM mech = { CKM_RSA_PKCS, NULL_PTR, 0 };
 			if (verbosity >= 4) {
 				printf ("%3d / %8d\b\b\b\b\b\b\b\b\b\b\b\b\b\b", couple - keytestctr, hundred - sigtestctr);
 			}
@@ -1165,11 +1165,13 @@ int main (int argc, char *argv []) {
 		 P11("C_GetMechanismInfo") (slotid, CKM_RSA_PKCS_KEY_PAIR_GEN, &mech_rsa_pkcs_key_pair_gen));
 	MKFATAL ();
 	TESTRV ("Getting number of mechanisms from token",
-		 P11("C_GetMechanismInfo") (slotid, CKM_SHA1_RSA_PKCS, &mech_sha1_rsa_pkcs));
+		 P11("C_GetMechanismInfo") (slotid, CKM_RSA_PKCS, &mech_rsa_pkcs));
 	MKFATAL ();
+	/*
 	TESTRV ("Getting number of mechanisms from token",
 		 P11("C_GetMechanismInfo") (slotid, CKM_SHA_1, &mech_sha_1));
 	MKFATAL ();
+	*/
 
 	/*
 	 * Format the token and run a test.
