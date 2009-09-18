@@ -13,4 +13,5 @@ hsmbully_LDADD = @CUNIT_LIBS@ -lm
 
 man_MANS = hsmbully.1
 
-EXTRA_DIST = $(srcdir)/cryptoki/*.h
+EXTRA_DIST =	$(srcdir)/cryptoki/*.h \
+		$(srcdir)/hsmbully.1
