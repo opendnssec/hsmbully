@@ -13,4 +13,4 @@ MAINTAINERCLEANFILES = \
 
 SUBDIRS = src checks
 
-EXTRA_DIST = examples doc
+EXTRA_DIST = doc
