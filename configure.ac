@@ -1,7 +1,7 @@
 # $Id$
 
 AC_PREREQ(2.61)
-AC_INIT([hsmbully],[0.0.1],[rick@openfortress.nl])
+AC_INIT([hsmbully],[0.1],[rick@openfortress.nl])
 
 AM_INIT_AUTOMAKE
 AC_CONFIG_MACRO_DIR([m4])
