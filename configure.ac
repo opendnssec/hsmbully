@@ -49,6 +49,14 @@ AC_ARG_WITH(pkcs11-softhsm,
 
 AC_SUBST(pkcs11_softhsm_module)
 
+AC_ARG_WITH(softhsm, 
+	AS_HELP_STRING([--with-softhsm=PATH],[specify path of SoftHSM binary to use for regression testing (default PREFIX/bin/softhsm)]),
+	[ softhsm_bin="$withval" ],
+	[ softhsm_bin="/usr/local/bin/libsofthsm.so" ]
+)
+
+AC_SUBST(softhsm_bin)
+
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
